@@ -2,7 +2,7 @@
 title: "Google Data Analytics Capstone Project"
 author: "Chibuikem M. Emenyonu"
 date: "2022-08-25"
-output: html_document
+output: rmarkdown::github_document
 ---
 
 # **Cyclistic Bikeshare Case Study**
