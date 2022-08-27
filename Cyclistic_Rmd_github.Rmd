@@ -41,59 +41,97 @@ library(dplyr)
 The following data cleaning & validation operations were carried out for each individual data frame (batch1,...,batch4). The steps highlighted below focus on batch3 data frame which comprises trip data for February2022, March2022 and April2022.
 
 Merge the data into a single data frame titled **batch3**:
-`batch3 <- bind_rows(feb22, mar22, apr22)`
+```{r}
+batch3 <- bind_rows(feb22, mar22, apr22)
+```
 
 Select fields required while omitting fields of least importance for my analysis:
-`batch3 <- batch3 %>% select(-one_of("start_lat","start_lng","end_lat","end_lng"))`
+```{r}
+batch3 <- batch3 %>% select(-one_of("start_lat","start_lng","end_lat","end_lng"))
+```
 
 Create a field to calculate the trip duration for each rider:
-`batch3 <- batch3%>% mutate(batch3, trip_duration = ended_at - started_at)`
+```{r}
+batch3 <- batch3%>% mutate(batch3, trip_duration = ended_at - started_at)
+```
 
 Addition of columns to list the date, month, year and day of the week. This will enable me aggregate ride data for day, month and year:
-`batch3$date <- as.Date(batch3$started_at)`
-`batch3$month <- format(as.Date(batch3$date),"%m")`
-`batch3$year <- format(as.Date(batch3$date),"%y")`
-`batch3$day_of_week <- format(as.Date(batch3$date),"%A")`
+```{r}
+batch3$date <- as.Date(batch3$started_at)
+batch3$month <- format(as.Date(batch3$date),"%m")
+batch3$year <- format(as.Date(batch3$date),"%y")
+batch3$day_of_week <- format(as.Date(batch3$date),"%A")
+```
 
 Since the trip duration is in seconds, it is important to rename the field and correctly format it as a number:
-`batch3 <- batch3 %>% rename(trip_length_secs = trip_duration)`
-`batch3$trip_length_secs <- as.numeric(as.character(batch3$trip_length_secs))`
+```{r}
+batch3 <- batch3 %>% rename(trip_length_secs = trip_duration)
+batch3$trip_length_secs <- as.numeric(as.character(batch3$trip_length_secs))
+```
 
 Finally, I saved it as a csv file:
-`write.csv(batch3, "batch3.csv")`
+```{r}
+write.csv(batch3, "batch3.csv")
+```
 
 ### **Analyze**
 Now that the data has been properly organized into respective data frames, I can organize into a single large data frame and perform necessary calculations & analysis.
 The individual data frames were merged into a single data frame titled `cyclistic`:
-`cyclistic <- bind_rows(batch1, batch2, batch3, batch4)`
+```{r}
+cyclistic <- bind_rows(batch1, batch2, batch3, batch4)
+```
 
 I observed some cells containing missing values (NA). These will all be changed to "null":
-`cyclistic[is.na(cyclistic)] <- "null"`
+```{r}
+cyclistic[is.na(cyclistic)] <- "null"
+```
 
 Additionally, negative values were observed in the trip length field. Trip duration can not be negative. A new data frame will be created, omitting the negative entries observed:
-`cyclistic_v2 <- cyclistic[!(cyclistic$trip_length_secs < 0),]`
+```{r}
+cyclistic_v2 <- cyclistic[!(cyclistic$trip_length_secs < 0),]
+```
 
 #### Descriptive and Summary Analysis
 1. Calculations such as the average trip length, maximum and minimum trip length are performed to highlight these important data points:
-`cyclistic_v2 %>% summarise(mean_trip_length = mean(trip_length_secs), median_tl = median(trip_length_secs), max_tl = max(trip_length_secs), min_tl = min(trip_length_secs))`
+```{r}
+cyclistic_v2 %>% summarise(mean_trip_length = mean(trip_length_secs), median_tl = median(trip_length_secs), max_tl = max(trip_length_secs), min_tl = min(trip_length_secs))
+```
 
 2. Comparing trip length by user type, day of the week and bike type:
-`aggregate(cyclistic_v2$trip_length_secs ~ cyclistic_v2$member_casual + cyclistic_v2$day_of_week + cyclistic_v2$rideable_type, FUN = mean)`
+```{r}
+aggregate(cyclistic_v2$trip_length_secs ~ cyclistic_v2$member_casual + cyclistic_v2$day_of_week + cyclistic_v2$rideable_type, FUN = mean)
+```
 
 3. Analyze ride data by user type, date and bike type. This will be exported as a csv file later on for further visualization using Tableau:
-`ride_data <- cyclistic_v2 %>%group_by(member_casual, date,rideable_type)%>%summarise(ridecount=n(),average_duration=mean(trip_length_secs))%>%arrange(member_casual, date)`
+```{r}
+ride_data <- cyclistic_v2 %>%group_by(member_casual, date,rideable_type)%>%
+summarise(ridecount=n(),average_duration=mean(trip_length_secs))%>%arrange(member_casual, date)
+```
 
 ### **Share**
 In this stage, I will communicate my findings from the analysis using visuals and presentation tools. The dashboard which displays a more holistic view to the data story can be viewed on my Tableau profile [here](https://public.tableau.com/app/profile/chibuikem6533#!/?newProfile=&activeTab=0)
 However, below are key data points obtained which can be visualized using `ggplot2`:
 1. Number of rides per usertype:
-`cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%group_by(member_casual, weekday)%>% summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>% arrange(member_casual, weekday) %>% ggplot(aes(x=weekday, y=number_of_rides, fill = member_casual))+geom_col(position = "dodge")`
+```{r}
+cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%group_by(member_casual, weekday)%>%
+summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>%
+arrange(member_casual, weekday) %>%
+ggplot(aes(x=weekday, y=number_of_rides, fill = member_casual))+geom_col(position = "dodge")
+```
 
 2. Average trip length by riders:
-`cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%group_by(member_casual, weekday)%>% summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>%arrange(member_casual, weekday) %>% ggplot(aes(x=weekday, y=average_duration, fill = member_casual))+geom_col(position = "dodge")`
+```{r}
+cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%
+group_by(member_casual, weekday)%>% summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>%
+arrange(member_casual, weekday) %>% ggplot(aes(x=weekday, y=average_duration, fill = member_casual))+geom_col(position = "dodge")
+```
 
 3. Most used bike type:
-`cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%group_by(member_casual, weekday, rideable_type)%>% summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>%arrange(member_casual, weekday) %>% ggplot(aes(x=rideable_type, y=number_of_rides, fill = member_casual))+geom_col(position = "dodge")+labs(x="Bike Type",y="Number of Rides", fill="Member/CasualRider")`
+```{r}
+cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%group_by(member_casual, weekday, rideable_type)%>%
+summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>%arrange(member_casual, weekday) %>%
+ggplot(aes(x=rideable_type, y=number_of_rides, fill = member_casual))+geom_col(position = "dodge")+labs(x="Bike Type",y="Number of Rides", fill="Member/CasualRider")
+```
 
 ### **Act**
 My top three recommendations based on the analysis are:
