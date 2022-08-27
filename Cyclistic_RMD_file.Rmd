@@ -32,22 +32,22 @@ In batches of three, the csv files were loaded in the R studio console using the
 #### Data Cleaning
 
 First, I load the `tidyverse`, `lubridate` and other required packages which will be used in this analysis.
-```{r,  error=FALSE, message=FALSE, warning=FALSE}
+
 library(tidyverse)
 library(lubridate)
 library(readr)
 library(dplyr)
-```
+
 The following data cleaning & validation operations were carried out for each individual data frame (batch1,...,batch4). The steps highlighted below focus on batch3 data frame which comprises trip data for February2022, March2022 and April2022.
 
 Merge the data into a single data frame titled **batch3**:
-`batch3 <- bind_rows(feb22, mar22, apr22)`
+batch3 <- bind_rows(feb22, mar22, apr22)
 
 Select fields required while omitting fields of least importance for my analysis:
-`batch3 <- batch3 %>% select(-one_of("start_lat","start_lng","end_lat","end_lng"))`
+batch3 <- batch3 %>% select(-one_of("start_lat","start_lng","end_lat","end_lng"))
 
 Create a field to calculate the trip duration for each rider:
-`batch3 <- batch3%>% mutate(batch3, trip_duration = ended_at - started_at)`
+batch3 <- batch3%>% mutate(batch3, trip_duration = ended_at - started_at)
 
 Addition of columns to list the date, month, year and day of the week. This will enable me aggregate ride data for day, month and year:
 `batch3$date <- as.Date(batch3$started_at)`
