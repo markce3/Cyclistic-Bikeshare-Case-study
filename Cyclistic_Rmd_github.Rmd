@@ -1,0 +1,108 @@
+---
+title: "Google Data Analytics Capstone"
+author: "Chibuikem M. Emenyonu"
+date: "2022-08-27"
+output: rmarkdown::github_document
+---
+
+# **Cyclistic Bikeshare Case Study**
+
+## **Introduction**
+
+As a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company’s future success depends on maximizing the number of annual memberships.
+The team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, the team will design a new marketing strategy to convert casual riders into annual members.
+In order to answer the business key questions, I will follow the steps of the data analysis process which include: *ask, prepare, process, analyze, share and act.*
+
+### **Ask**
+This stage involves identifying the problem I am trying to solve and the key  stakeholders involved. The problem to be solved is stated in the business task.
+
+#### Business Task
+Analyze Cyclistic's historical bike trip data to determine how casual riders differ from annual members.This will involve collecting previous 12 months of Cyclistic trip data.
+
+### **Prepare**
+This stage involves data collection and verification for accuracy.
+The data used was provided by Motivation International Inc. under this [license](https://www.divvybikes.com/data-license-agreement) and it can be accessed [here](https://divvy-tripdata.s3.amazonaws.com/index.html).
+The data used consists of 12 individual csv files for trip data from August 2021 till July 2022. Each csv file contains 13 fields of data which include trip information such as ride_id, rideable_type, trip start time, trip end time, etc.
+Riders' personal identifiable information was withheld due to data-privacy issues.
+
+### **Process**
+I observed the data records ranged from 103k to 800k. As a result of the data size, I decided to use R Studio for my data cleaning and validation.
+In batches of three, the csv files were loaded in the R studio console using the `read_csv()` function and stored to data frames: batch1, batch2, batch3 and batch4.
+
+#### Data Cleaning
+
+First, I load the `tidyverse`, `lubridate` and other required packages which will be used in this analysis.
+```{r,  error=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(readr)
+library(dplyr)
+```
+The following data cleaning & validation operations were carried out for each individual data frame (batch1,...,batch4). The steps highlighted below focus on batch3 data frame which comprises trip data for February2022, March2022 and April2022.
+
+Merge the data into a single data frame titled **batch3**:
+`batch3 <- bind_rows(feb22, mar22, apr22)`
+
+Select fields required while omitting fields of least importance for my analysis:
+`batch3 <- batch3 %>% select(-one_of("start_lat","start_lng","end_lat","end_lng"))`
+
+Create a field to calculate the trip duration for each rider:
+`batch3 <- batch3%>% mutate(batch3, trip_duration = ended_at - started_at)`
+
+Addition of columns to list the date, month, year and day of the week. This will enable me aggregate ride data for day, month and year:
+`batch3$date <- as.Date(batch3$started_at)`
+`batch3$month <- format(as.Date(batch3$date),"%m")`
+`batch3$year <- format(as.Date(batch3$date),"%y")`
+`batch3$day_of_week <- format(as.Date(batch3$date),"%A")`
+
+Since the trip duration is in seconds, it is important to rename the field and correctly format it as a number:
+`batch3 <- batch3 %>% rename(trip_length_secs = trip_duration)`
+`batch3$trip_length_secs <- as.numeric(as.character(batch3$trip_length_secs))`
+
+Finally, I saved it as a csv file:
+`write.csv(batch3, "batch3.csv")`
+
+### **Analyze**
+Now that the data has been properly organized into respective data frames, I can organize into a single large data frame and perform necessary calculations & analysis.
+The individual data frames were merged into a single data frame titled `cyclistic`:
+`cyclistic <- bind_rows(batch1, batch2, batch3, batch4)`
+
+I observed some cells containing missing values (NA). These will all be changed to "null":
+`cyclistic[is.na(cyclistic)] <- "null"`
+
+Additionally, negative values were observed in the trip length field. Trip duration can not be negative. A new data frame will be created, omitting the negative entries observed:
+`cyclistic_v2 <- cyclistic[!(cyclistic$trip_length_secs < 0),]`
+
+#### Descriptive and Summary Analysis
+1. Calculations such as the average trip length, maximum and minimum trip length are performed to highlight these important data points:
+`cyclistic_v2 %>% summarise(mean_trip_length = mean(trip_length_secs), median_tl = median(trip_length_secs), max_tl = max(trip_length_secs), min_tl = min(trip_length_secs))`
+
+2. Comparing trip length by user type, day of the week and bike type:
+`aggregate(cyclistic_v2$trip_length_secs ~ cyclistic_v2$member_casual + cyclistic_v2$day_of_week + cyclistic_v2$rideable_type, FUN = mean)`
+
+3. Analyze ride data by user type, date and bike type. This will be exported as a csv file later on for further visualization using Tableau:
+`ride_data <- cyclistic_v2 %>%group_by(member_casual, date,rideable_type)%>%summarise(ridecount=n(),average_duration=mean(trip_length_secs))%>%arrange(member_casual, date)`
+
+### **Share**
+In this stage, I will communicate my findings from the analysis using visuals and presentation tools. The dashboard which displays a more holistic view to the data story can be viewed on my Tableau profile [here](https://public.tableau.com/app/profile/chibuikem6533#!/?newProfile=&activeTab=0)
+However, below are key data points obtained which can be visualized using `ggplot2`:
+1. Number of rides per usertype:
+`cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%group_by(member_casual, weekday)%>% summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>% arrange(member_casual, weekday) %>% ggplot(aes(x=weekday, y=number_of_rides, fill = member_casual))+geom_col(position = "dodge")`
+
+2. Average trip length by riders:
+`cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%group_by(member_casual, weekday)%>% summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>%arrange(member_casual, weekday) %>% ggplot(aes(x=weekday, y=average_duration, fill = member_casual))+geom_col(position = "dodge")`
+
+3. Most used bike type:
+`cyclistic_v2 %>% mutate(weekday = wday(started_at, label = TRUE)) %>%group_by(member_casual, weekday, rideable_type)%>% summarise(number_of_rides = n(),average_duration=mean(trip_length_secs))%>%arrange(member_casual, weekday) %>% ggplot(aes(x=rideable_type, y=number_of_rides, fill = member_casual))+geom_col(position = "dodge")+labs(x="Bike Type",y="Number of Rides", fill="Member/CasualRider")`
+
+### **Act**
+My top three recommendations based on the analysis are:
+1. Casual riders embark on more rides during the weekends (compared to Annual Members). This means that marketing campaigns for casual riders should be tailored to weekends as there are more casual riders during the weekends than the weekdays.
+
+2. Docked bikes are largely used by Casual riders alone. To convert Casual riders to Annual Members, I would suggest discounts placed on the use of docked bikes as a subscription bonus for casual riders.
+
+3. It is also seen that Casual riders averaged a longer trip duration than Annual Members. This would suggest that Casual riders are more likely to long distance riders. Therefore, a marketing campaign can be targeted to long distance riders, while offering them subscription bonuses for a period of time.
+
+## **Conclusion**
+This brings us to the end of this case study. I hope it was worth your while.
+Thank you for reading.
