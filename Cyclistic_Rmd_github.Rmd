@@ -97,7 +97,7 @@ cyclistic_v2 <- cyclistic[!(cyclistic$trip_length_secs < 0),]
 cyclistic_v2 %>% summarise(mean_trip_length = mean(trip_length_secs), median_tl = median(trip_length_secs), max_tl = max(trip_length_secs), min_tl = min(trip_length_secs))
 ```
 
-2. Comparing trip length by user type, day of the week and bike type:
+2. Comparing average trip length by user type, day of the week and bike type:
 ```{r}
 aggregate(cyclistic_v2$trip_length_secs ~ cyclistic_v2$member_casual + cyclistic_v2$day_of_week + cyclistic_v2$rideable_type, FUN = mean)
 ```
@@ -139,7 +139,7 @@ My top three recommendations based on the analysis are:
 
 2. Docked bikes are largely used by Casual riders alone. To convert Casual riders to Annual Members, I would suggest discounts placed on the use of docked bikes as a subscription bonus for casual riders.
 
-3. It is also seen that Casual riders averaged a longer trip duration than Annual Members. This would suggest that Casual riders are more likely to long distance riders. Therefore, a marketing campaign can be targeted to long distance riders, while offering them subscription bonuses for a period of time.
+3. It is also seen that Casual riders averaged a longer trip duration than Annual Members. This would suggest that Casual riders are more likely to be long distance riders. Therefore, a marketing campaign can be targeted to long distance riders, while offering them subscription bonuses for a period of time.
 
 ## **Conclusion**
 This brings us to the end of this case study. I hope it was worth your while.
